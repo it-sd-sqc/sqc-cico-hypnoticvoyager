@@ -37,11 +37,15 @@ public class Main {
   private static class InputFilter extends DocumentFilter {
     private static final int MAX_LENGTH = 8;
 
+    public int getMaxLength() {
+      return MAX_LENGTH;
+    }
+
     @Override
     public void insertString(FilterBypass fb, int offset, String stringToAdd, AttributeSet attr)
         throws BadLocationException
     {
-      if (fb.getDocument() != null) {
+      if (fb.getDocument() != null && fb.getDocument().getLength() < MAX_LENGTH) {
         super.insertString(fb, offset, stringToAdd, attr);
       }
       else {
@@ -53,7 +57,7 @@ public class Main {
     public void replace(FilterBypass fb, int offset, int lengthToDelete, String stringToAdd, AttributeSet attr)
         throws BadLocationException
     {
-      if (fb.getDocument() != null) {
+      if (fb.getDocument() != null && (fb.getDocument().getLength() < MAX_LENGTH || lengthToDelete > 0)) {
         super.replace(fb, offset, lengthToDelete, stringToAdd, attr);
       }
       else {
@@ -119,55 +123,56 @@ public class Main {
 
   // Lookup a card number, toggle the status, and log the new status //////////
   private static void processCard() {
-    if (db == null) {
-      showError(ERROR_NO_DB);
-      return;
-    }
-
-    ResultSet rows = null;
-    try {
-      statementQueryCard.setString(1, fieldNumber.getText());
-      rows = statementQueryCard.executeQuery();
-      if (rows.next()) {
-        int id = rows.getInt("id");
-        String name = rows.getString("name");
-        int currentState = rows.getInt("is_checked_in");
-        currentState = (currentState + 1) % 2;
-
-        statementUpdateMember.setInt(1, currentState);
-        statementUpdateMember.setInt(2, id);
-        int numChanged = statementUpdateMember.executeUpdate();
-        if (numChanged != 1) {
-          showError(ERROR_UPDATE_FAILED);
-          return;
-        }
-
-        statementUpdateLog.setInt(1, id);
-        statementUpdateLog.setInt(2, currentState);
-        int numInserted = statementUpdateLog.executeUpdate();
-        if (numInserted != 1) {
-          showError(ERROR_INSERT_FAILED);
-        }
-
-        updateStateLabels(name, currentState == 1);
-        scheduleTransitionFrom(CARD_STATE, null);
+    InputFilter filter = (InputFilter) ((AbstractDocument) (fieldNumber.getDocument())).getDocumentFilter();
+    if (fieldNumber.getText().length() == filter.getMaxLength()) {
+      if (db == null) {
+        showError(ERROR_NO_DB);
+        return;
       }
-      else {
-        showError(ERROR_NOT_FOUND);
-      }
-    }
-    catch (SQLException e) {
-      System.err.println(e.getMessage());
-      showError(ERROR_UNKNOWN);
-    }
-    finally {
+
+      ResultSet rows = null;
       try {
-        if (rows != null) rows.close();
-      }
-      catch (SQLException e2) {
-        System.err.println(e2.getMessage());
+        statementQueryCard.setString(1, fieldNumber.getText());
+        rows = statementQueryCard.executeQuery();
+        if (rows.next()) {
+          int id = rows.getInt("id");
+          String name = rows.getString("name");
+          int currentState = rows.getInt("is_checked_in");
+          currentState = (currentState + 1) % 2;
+
+          statementUpdateMember.setInt(1, currentState);
+          statementUpdateMember.setInt(2, id);
+          int numChanged = statementUpdateMember.executeUpdate();
+          if (numChanged != 1) {
+            showError(ERROR_UPDATE_FAILED);
+            return;
+          }
+
+          statementUpdateLog.setInt(1, id);
+          statementUpdateLog.setInt(2, currentState);
+          int numInserted = statementUpdateLog.executeUpdate();
+          if (numInserted != 1) {
+            showError(ERROR_INSERT_FAILED);
+          }
+
+          updateStateLabels(name, currentState == 1);
+          scheduleTransitionFrom(CARD_STATE, null);
+        } else {
+          showError(ERROR_NOT_FOUND);
+        }
+      } catch (SQLException e) {
+        System.err.println(e.getMessage());
         showError(ERROR_UNKNOWN);
+      } finally {
+        try {
+          if (rows != null) rows.close();
+        } catch (SQLException e2) {
+          System.err.println(e2.getMessage());
+          showError(ERROR_UNKNOWN);
+        }
       }
+    } else {
+      Toolkit.getDefaultToolkit().beep();
     }
   }
 
