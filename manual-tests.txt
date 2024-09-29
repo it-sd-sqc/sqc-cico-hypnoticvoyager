@@ -69,6 +69,14 @@ Use `./build.sh` to build CiCo and `./run.sh` to run it if using the command lin
 2. Enter 000000000 into the field and click update.
 
 ## Expected result
-* Should not allow the user to enter any more than 9 characters.
+* Should not allow the user to enter any more than 8 characters.
 
+# Module 5: Display Return Button
 
+## Test steps:
+1. Build and run CiCo.
+2. Enter 00000000 into the field and click update.
+3. Press the "Return" button.
+
+## Expected result
+* Return button should display and take user back to starting screen upon clicking.
