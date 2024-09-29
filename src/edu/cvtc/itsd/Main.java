@@ -73,6 +73,12 @@ public class Main {
     }
   }
 
+  public static class Return implements ActionListener {
+    public void actionPerformed(ActionEvent evt) {
+      Main.doneProcessing();
+    }
+  }
+
   // Revert to the main panel after a button press ////////////////////////////
   public static class Handler implements ActionListener {
     public void actionPerformed(ActionEvent evt) {
@@ -293,6 +299,12 @@ public class Main {
     labelState.setAlignmentX(JComponent.CENTER_ALIGNMENT);
     labelState.setForeground(Color.magenta);
     panelStatus.add(labelState);
+
+    JButton returnButton = new JButton("Return");
+    returnButton.setAlignmentX(JComponent.CENTER_ALIGNMENT);
+    returnButton.addActionListener(new Return());
+    returnButton.setForeground(Color.black);
+    panelStatus.add(returnButton);
 
     panelStatus.add(Box.createVerticalGlue());
 
